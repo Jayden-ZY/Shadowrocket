@@ -33,7 +33,7 @@
 
 > 官方群组：[Shadowrocket App](https://t.me/ShadowrocketApp)<br>
 > 官方频道：[Shadowrocket News](https://t.me/ShadowrocketNews)<br>
-> 官方邮箱：[buginapp@gmail.com](mailto:buginapp@gmail.com)
+> 官方邮箱：[buginapp@gmail.com](mailto:buginapp@gmail.com)<br>
 > 使用手册：[Shadowrocket.dpdns.org](https://lowertop.github.io/Shadowrocket/)
 
 ## [使用目录](https://github.com/LOWERTOP/Shadowrocket)
