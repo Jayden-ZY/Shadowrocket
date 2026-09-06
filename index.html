@@ -100,25 +100,42 @@
       color-scheme: light;
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
     }
     html.dark { color-scheme: dark; }
 
     body {
       margin: 0;
+      overflow-x: hidden;
       overscroll-behavior: none;
+      overscroll-behavior-x: none;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 触屏设备：页面本身只允许纵向触控，不允许横向拖动整个页面。
+       pre / table 等内部横向滚动区域由下面的规则单独保留。 */
+    @media (pointer: coarse) {
+      html,
+      body {
+        touch-action: pan-y;
+      }
     }
 
     /* iOS Safari / PWA：避免 100vh 在地址栏变化时造成布局跳动 */
     .app-shell {
       height: 100dvh;
       min-height: 100dvh;
+      max-width: 100%;
+      overflow-x: hidden;
     }
 
     #content-container {
       overscroll-behavior: contain;
+      overscroll-behavior-x: none;
       -webkit-overflow-scrolling: touch;
       scrollbar-gutter: stable;
+      max-width: 100%;
     }
 
     #toc-tree {
@@ -157,6 +174,14 @@
       display: block;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+    }
+
+    /* 横向滚动仅限文档内部明确的滚动区域，不让横向手势带动整个页面。 */
+    @media (pointer: coarse) {
+      .markdown-body pre,
+      .markdown-body table {
+        touch-action: pan-x pan-y;
+      }
     }
 
     /* 搜索结果点击区域更稳定 */
@@ -319,6 +344,53 @@
       const $ = (id) => document.getElementById(id);
       const html = document.documentElement;
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      /* ---------- 触屏设备：禁止页面级横向触控滚动 ---------- */
+      const coarsePointer = window.matchMedia('(pointer: coarse)');
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchTracking = false;
+
+      function isHorizontalScrollableArea(target) {
+        return target instanceof Element &&
+          !!target.closest('.markdown-body pre, .markdown-body table');
+      }
+
+      function setupTouchScrollGuard() {
+        if (!coarsePointer.matches) return;
+
+        document.addEventListener('touchstart', e => {
+          const touch = e.touches?.[0];
+          if (!touch) return;
+
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+          touchTracking = !isHorizontalScrollableArea(e.target);
+        }, { passive: true });
+
+        document.addEventListener('touchmove', e => {
+          if (!touchTracking || e.touches.length !== 1) return;
+
+          const touch = e.touches[0];
+          const dx = touch.clientX - touchStartX;
+          const dy = touch.clientY - touchStartY;
+
+          // 只拦截明显的横向页面手势；正常上下滚动完全不受影响。
+          if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+          touchTracking = false;
+        }, { passive: true });
+
+        document.addEventListener('touchcancel', () => {
+          touchTracking = false;
+        }, { passive: true });
+      }
+
+      setupTouchScrollGuard();
 
       /* ---------- 主题 ---------- */
       const themeToggleBtn = $('theme-toggle');
