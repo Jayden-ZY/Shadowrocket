@@ -32,9 +32,9 @@
 > 软件不提供任何服务器资源，用户可根据需要自行配置相关服务
 
 > 使用手册：[Shadowrocket.dpdns.org](https://lowertop.github.io/Shadowrocket/)<br>
-> 官方群组：[Shadowrocket App](https://t.me/ShadowrocketApp)<br>
+> 反馈邮箱：[buginapp@gmail.com](mailto:buginapp@gmail.com)<br>
 > 官方频道：[Shadowrocket News](https://t.me/ShadowrocketNews)<br>
-> 官方邮箱：[buginapp@gmail.com](mailto:buginapp@gmail.com)
+> 官方群组：[Shadowrocket App](https://t.me/ShadowrocketApp)
 
 ## [使用目录](https://github.com/LOWERTOP/Shadowrocket)
 
