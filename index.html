@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Shadowrocket 使用手册</title>
   
   <!-- 标签页图标 -->
@@ -94,10 +94,99 @@
 
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* ===== 稳定性与性能优化 ===== */
+    html {
+      color-scheme: light;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    html.dark { color-scheme: dark; }
+
+    body {
+      margin: 0;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* iOS Safari / PWA：避免 100vh 在地址栏变化时造成布局跳动 */
+    .app-shell {
+      height: 100dvh;
+      min-height: 100dvh;
+    }
+
+    #content-container {
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-gutter: stable;
+    }
+
+    #toc-tree {
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 弹窗打开时锁住背景滚动，但不改变弹窗内部滚动 */
+    body.search-open {
+      overflow: hidden;
+    }
+
+    #search-modal {
+      padding-top: max(3rem, env(safe-area-inset-top));
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      padding-left: max(1rem, env(safe-area-inset-left));
+      padding-right: max(1rem, env(safe-area-inset-right));
+    }
+
+    #search-modal > div {
+      max-height: min(80dvh, 720px);
+    }
+
+    /* 防止代码块在移动端把整个页面撑宽 */
+    .markdown-body pre {
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .markdown-body img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .markdown-body table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 搜索结果点击区域更稳定 */
+    .search-item {
+      touch-action: manipulation;
+    }
+
+    /* 减少低性能设备上的非必要动画 */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (max-width: 767px) {
+      #doc-content {
+        border-radius: 0 !important;
+      }
+      #content-container {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      }
+    }
+
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
-  <div class="flex h-screen overflow-hidden relative">
+  <div class="app-shell flex overflow-hidden relative">
 
     <!-- 窄屏抽屉背景遮罩 -->
     <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
@@ -219,432 +308,682 @@
   </div>
 
   <script>
-    lucide.createIcons();
+    (() => {
+      'use strict';
 
-    // 1. 主题切换
-    const themeToggleBtn = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-    const html = document.documentElement;
+      /* =========================
+         Shadowrocket 使用手册
+         稳定性 / 性能优化版
+         ========================= */
 
-    function setTheme(dark) {
-      if (dark) {
-        html.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-        themeIcon.setAttribute('data-lucide', 'sun');
-      } else {
-        html.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-        themeIcon.setAttribute('data-lucide', 'moon');
+      const $ = (id) => document.getElementById(id);
+      const html = document.documentElement;
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      /* ---------- 主题 ---------- */
+      const themeToggleBtn = $('theme-toggle');
+      const themeIcon = $('theme-icon');
+
+      function applyTheme(dark, persist = true) {
+        html.classList.toggle('dark', dark);
+        if (persist) localStorage.setItem('theme', dark ? 'dark' : 'light');
+
+        if (themeIcon) {
+          themeIcon.setAttribute('data-lucide', dark ? 'sun' : 'moon');
+          if (window.lucide) lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+        }
       }
-      lucide.createIcons();
-    }
 
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
-    themeToggleBtn.addEventListener('click', () => setTheme(!html.classList.contains('dark')));
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark, false);
 
-    // 2. 移动端抽屉与遮罩管理
-    const menuBtn = document.getElementById('menu-btn');
-    const sidebar = document.getElementById('sidebar');
-    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
-    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-
-    function openSidebar() {
-      sidebar.classList.remove('-translate-x-full');
-      sidebarBackdrop.classList.remove('hidden');
-    }
-
-    function closeSidebar() {
-      sidebar.classList.add('-translate-x-full');
-      sidebarBackdrop.classList.add('hidden');
-    }
-
-    menuBtn?.addEventListener('click', openSidebar);
-    closeSidebarBtn?.addEventListener('click', closeSidebar);
-    sidebarBackdrop?.addEventListener('click', closeSidebar);
-
-    // 3. 高亮配置
-    marked.setOptions({
-      highlight: function(code, lang) {
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        return hljs.highlight(code, { language }).value;
-      }
-    });
-
-    // 4. Markdown 清洗流水线 (截取起始标题 + 取消标题超链 + 隐藏正文使用目录 + Callout 语义化)
-    function preprocessMarkdown(md) {
-      if (!md) return "";
-
-      // 1. 取消所有标题中的超链接：如 "## [快速使用方法](#xxx)" => "## 快速使用方法"
-      let cleaned = md.replace(/^(#{1,6}\s+)(.*?)$/gm, (match, hashes, titleContent) => {
-        const textOnly = titleContent.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-        return hashes + textOnly;
+      themeToggleBtn?.addEventListener('click', () => {
+        applyTheme(!html.classList.contains('dark'));
       });
 
-      // 2. 截取从“Shadowrocket 使用手册”标题开始的正文，不显示上方的内容
-      const headerMatch = cleaned.match(/(?:^|\n)((?:#{1,6}\s+.*?Shadowrocket\s*使用手册|<h[1-6][^>]*>.*?Shadowrocket\s*使用手册[\s\S]*?<\/h[1-6]>)[\s\S]*)/i);
-      if (headerMatch) {
-        cleaned = headerMatch[1];
+      /* ---------- 移动端侧边栏 ---------- */
+      const menuBtn = $('menu-btn');
+      const sidebar = $('sidebar');
+      const closeSidebarBtn = $('close-sidebar-btn');
+      const sidebarBackdrop = $('sidebar-backdrop');
+
+      function openSidebar() {
+        sidebar?.classList.remove('-translate-x-full');
+        sidebarBackdrop?.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden', 'md:overflow-auto');
       }
 
-      // 3. 彻底剔除正文中的“使用目录”段落及其后续的目录列表
-      cleaned = cleaned.replace(/#{1,6}\s*(?:使用目录|目录|Table of Contents)[\s\S]*?(?=\n#{1,6}\s+|$)/i, '');
+      function closeSidebar() {
+        sidebar?.classList.add('-translate-x-full');
+        sidebarBackdrop?.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+      }
 
-      // 4. 渲染 GitHub 风格 Callout 语义卡片
-      const calloutConfig = {
-        'TIP': { label: '提示', icon: 'lightbulb', class: 'callout-tip' },
-        'NOTE': { label: '注意', icon: 'info', class: 'callout-note' },
-        'WARNING': { label: '警告', icon: 'alert-triangle', class: 'callout-warning' },
-        'CAUTION': { label: '小心', icon: 'alert-octagon', class: 'callout-caution' },
-        'IMPORTANT': { label: '重要', icon: 'alert-circle', class: 'callout-important' }
-      };
+      menuBtn?.addEventListener('click', openSidebar);
+      closeSidebarBtn?.addEventListener('click', closeSidebar);
+      sidebarBackdrop?.addEventListener('click', closeSidebar);
 
-      cleaned = cleaned.replace(/(?:^|\n)(> *\[!(TIP|NOTE|WARNING|CAUTION|IMPORTANT)\][\s\S]*?)(?=\n\n(?![> ])|\n(?=[^> ])|$)/gi, (match, p1, type) => {
-        const upperType = type.toUpperCase();
-        const conf = calloutConfig[upperType] || { label: upperType, icon: 'info', class: 'callout-note' };
-
-        const lines = p1.trim().split('\n');
-        const contentLines = [];
-        for (let i = 1; i < lines.length; i++) {
-          contentLines.push(lines[i].replace(/^>\s?/, ''));
-        }
-        const innerMd = contentLines.join('\n').trim();
-        const innerHtml = marked.parse(innerMd);
-
-        return `\n\n<div class="callout-box ${conf.class}">
-          <div class="callout-header">
-            <i data-lucide="${conf.icon}" class="w-4 h-4"></i>
-            <span>${conf.label}</span>
-          </div>
-          <div class="callout-content">${innerHtml}</div>
-        </div>\n\n`;
+      /* ---------- Markdown 配置 ---------- */
+      marked.setOptions({
+        gfm: true,
+        breaks: false,
+        headerIds: false,
+        mangle: false
       });
 
-      return cleaned;
-    }
+      /* highlight.js 由 marked 解析后统一处理。
+         这样可避免新版 marked 中 highlight 回调失效的问题。 */
+      function highlightCodeBlocks(root) {
+        root.querySelectorAll('pre code').forEach(code => {
+          try {
+            if (window.hljs) hljs.highlightElement(code);
+          } catch (err) {
+            console.warn('代码高亮失败:', err);
+          }
+        });
+      }
 
-    // 辅助：生成规范化锚点 Slug
-    function slugify(text) {
-      return text.trim()
-        .toLowerCase()
-        .replace(/[\s\t\n]+/g, '-')
-        .replace(/[^\w\u4e00-\u9fa5\-_]/g, '');
-    }
+      /* ---------- HTML 转义 ---------- */
+      function escapeHtml(value = '') {
+        return String(value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
 
-    // 5. 全文搜索索引
-    let searchIndex = [];
+      /* ---------- Markdown 预处理 ---------- */
+      function preprocessMarkdown(md) {
+        if (!md) return '';
 
-    function buildSearchIndex() {
-      searchIndex = [];
-      const docContent = document.getElementById('doc-content');
-      let currentSection = '概述';
-      let currentSectionId = '';
+        let cleaned = String(md).replace(/\r\n?/g, '\n');
 
-      const children = docContent.children;
-      for (let i = 0; i < children.length; i++) {
-        const el = children[i];
-        const tagName = el.tagName.toLowerCase();
+        // 去除标题内部链接，但保留标题文字
+        cleaned = cleaned.replace(
+          /^(#{1,6}\s+)(.*?)$/gm,
+          (match, hashes, titleContent) => {
+            const textOnly = titleContent.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+            return hashes + textOnly;
+          }
+        );
 
-        if (['h1', 'h2', 'h3'].includes(tagName)) {
-          currentSection = el.innerText.trim();
-          currentSectionId = el.id;
-          searchIndex.push({
-            type: 'heading',
-            section: currentSection,
-            elementId: currentSectionId,
-            text: el.innerText.trim(),
-            rawElement: el
-          });
-          continue;
+        // 从“Shadowrocket 使用手册”标题开始显示
+        const lines = cleaned.split('\n');
+        const titleIndex = lines.findIndex(line =>
+          /^#{1,6}\s+.*Shadowrocket\s*使用手册/i.test(line.trim())
+        );
+        if (titleIndex >= 0) {
+          cleaned = lines.slice(titleIndex).join('\n');
         }
 
-        const text = el.innerText ? el.innerText.trim() : '';
-        if (text.length > 2) {
-          const blockId = `block-${i}`;
-          el.id = el.id || blockId;
+        // 删除目录章节
+        cleaned = cleaned.replace(
+          /(?:^|\n)#{1,6}\s*(?:使用目录|目录|Table of Contents)\s*\n[\s\S]*?(?=\n#{1,6}\s+|$)/i,
+          '\n'
+        );
 
-          searchIndex.push({
-            type: 'content',
-            section: currentSection,
-            elementId: el.id,
-            text: text,
-            rawElement: el
+        /* GitHub Callout */
+        const calloutConfig = {
+          TIP:       { label: '提示', icon: 'lightbulb', className: 'callout-tip' },
+          NOTE:      { label: '注意', icon: 'info', className: 'callout-note' },
+          WARNING:   { label: '警告', icon: 'alert-triangle', className: 'callout-warning' },
+          CAUTION:   { label: '小心', icon: 'alert-octagon', className: 'callout-caution' },
+          IMPORTANT: { label: '重要', icon: 'alert-circle', className: 'callout-important' }
+        };
+
+        cleaned = cleaned.replace(
+          /(?:^|\n)(> *\[!(TIP|NOTE|WARNING|CAUTION|IMPORTANT)\][\s\S]*?)(?=\n\n(?![> ])|\n(?=[^> ])|$)/gi,
+          (match, block, type) => {
+            const conf = calloutConfig[type.toUpperCase()] || calloutConfig.NOTE;
+            const lines = block.trim().split('\n');
+            const content = lines.slice(1)
+              .map(line => line.replace(/^>\s?/, ''))
+              .join('\n')
+              .trim();
+
+            const innerHtml = marked.parse(content);
+
+            return `
+
+<div class="callout-box ${conf.className}">
+  <div class="callout-header">
+    <i data-lucide="${conf.icon}" class="w-4 h-4" aria-hidden="true"></i>
+    <span>${conf.label}</span>
+  </div>
+  <div class="callout-content">${innerHtml}</div>
+</div>
+
+`;
+          }
+        );
+
+        return cleaned.trim();
+      }
+
+      /* ---------- Slug ---------- */
+      function slugify(text) {
+        return String(text || '')
+          .trim()
+          .toLowerCase()
+          .replace(/[\s\t\n]+/g, '-')
+          .replace(/[^\w\u4e00-\u9fa5\-_]/g, '');
+      }
+
+      function makeUniqueId(base, used) {
+        const safeBase = slugify(base) || 'section';
+        let id = safeBase;
+        let n = 2;
+        while (used.has(id) || $(id)) id = `${safeBase}-${n++}`;
+        used.add(id);
+        return id;
+      }
+
+      /* ---------- 全文索引 ---------- */
+      let searchIndex = [];
+
+      function buildSearchIndex() {
+        searchIndex = [];
+        const docContent = $('doc-content');
+        if (!docContent) return;
+
+        let currentSection = '概述';
+        let currentSectionId = '';
+
+        Array.from(docContent.children).forEach((el, index) => {
+          const tag = el.tagName.toLowerCase();
+
+          if (['h1', 'h2', 'h3'].includes(tag)) {
+            currentSection = el.innerText.trim();
+            currentSectionId = el.id;
+            if (currentSection) {
+              searchIndex.push({
+                type: 'heading',
+                section: currentSection,
+                elementId: currentSectionId,
+                text: currentSection,
+                rawElement: el
+              });
+            }
+            return;
+          }
+
+          const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
+          if (text.length > 2) {
+            if (!el.id) el.id = `block-${index}`;
+
+            searchIndex.push({
+              type: 'content',
+              section: currentSection,
+              sectionId: currentSectionId,
+              elementId: el.id,
+              text,
+              rawElement: el
+            });
+          }
+        });
+      }
+
+      /* ---------- 目录 + 复制按钮 ---------- */
+      function buildTOCAndCodeActions() {
+        const docContent = $('doc-content');
+        const tocTree = $('toc-tree');
+        if (!docContent || !tocTree) return;
+
+        tocTree.replaceChildren();
+
+        const usedIds = new Set();
+
+        Array.from(docContent.querySelectorAll('h1, h2, h3')).forEach((heading, idx) => {
+          const text = heading.innerText.trim();
+
+          if (
+            text === '使用目录' ||
+            text === '目录' ||
+            text.toLowerCase() === 'table of contents'
+          ) {
+            heading.remove();
+            return;
+          }
+
+          const id = makeUniqueId(text || `section-${idx}`, usedIds);
+          heading.id = id;
+          heading.dataset.rawTitle = text;
+
+          const link = document.createElement('a');
+          link.href = `#${encodeURIComponent(id)}`;
+          link.className =
+            'block py-1.5 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 ' +
+            'transition-colors truncate ' +
+            (heading.tagName === 'H1'
+              ? 'font-semibold text-slate-800 dark:text-slate-200'
+              : heading.tagName === 'H2'
+                ? 'ml-3 text-slate-600 dark:text-slate-400'
+                : 'ml-6 text-xs text-slate-500 dark:text-slate-500');
+
+          link.textContent = text;
+          link.addEventListener('click', e => {
+            e.preventDefault();
+            scrollToElement(heading, true);
+            if (window.innerWidth < 768) closeSidebar();
+          });
+
+          tocTree.appendChild(link);
+        });
+
+        // 重新建立索引，因为目录阶段可能移除了元素
+        buildSearchIndex();
+
+        docContent.querySelectorAll('pre').forEach(pre => {
+          if (pre.querySelector('.code-copy-btn')) return;
+
+          const copyBtn = document.createElement('button');
+          copyBtn.type = 'button';
+          copyBtn.className =
+            'code-copy-btn absolute top-2.5 right-2.5 text-xs bg-slate-800 ' +
+            'hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition ' +
+            'border border-slate-700 select-none';
+          copyBtn.textContent = '复制';
+          copyBtn.setAttribute('aria-label', '复制代码');
+
+          copyBtn.addEventListener('click', async () => {
+            const code = pre.querySelector('code')?.innerText || '';
+            try {
+              await navigator.clipboard.writeText(code);
+              copyBtn.textContent = '已复制';
+            } catch {
+              // 兼容不支持 Clipboard API 的环境
+              const ta = document.createElement('textarea');
+              ta.value = code;
+              ta.style.position = 'fixed';
+              ta.style.opacity = '0';
+              document.body.appendChild(ta);
+              ta.select();
+              try {
+                document.execCommand('copy');
+                copyBtn.textContent = '已复制';
+              } catch {
+                copyBtn.textContent = '复制失败';
+              }
+              ta.remove();
+            }
+            setTimeout(() => { copyBtn.textContent = '复制'; }, 1800);
+          });
+
+          pre.appendChild(copyBtn);
+        });
+      }
+
+      /* ---------- 滚动 ---------- */
+      function scrollToElement(target, highlight = false) {
+        if (!target) return;
+
+        const container = $('content-container');
+        const reduced = prefersReducedMotion.matches;
+
+        // 优先控制真正的滚动容器，避免 iOS Safari scrollIntoView 同时滚动 body
+        if (container) {
+          const cRect = container.getBoundingClientRect();
+          const tRect = target.getBoundingClientRect();
+          const targetTop = container.scrollTop + (tRect.top - cRect.top) - 18;
+
+          container.scrollTo({
+            top: Math.max(0, targetTop),
+            behavior: reduced ? 'auto' : 'smooth'
+          });
+        } else {
+          target.scrollIntoView({
+            behavior: reduced ? 'auto' : 'smooth',
+            block: 'start'
+          });
+        }
+
+        if (highlight) {
+          target.classList.remove('target-highlight');
+          requestAnimationFrame(() => {
+            void target.offsetWidth;
+            target.classList.add('target-highlight');
           });
         }
       }
-    }
 
-    // 6. 搜索模态框逻辑
-    const searchModal = document.getElementById('search-modal');
-    const globalSearchInput = document.getElementById('global-search-input');
-    const searchResults = document.getElementById('search-results');
-    const openSearchBtn = document.getElementById('open-search-modal');
-    const openSearchBtnMobile = document.getElementById('open-search-modal-mobile');
-    const closeSearchBtn = document.getElementById('close-search-btn');
+      /* ---------- 正文内部链接 ---------- */
+      function setupInternalLinks() {
+        const container = $('content-container');
+        if (!container) return;
 
-    function openSearch() {
-      searchModal.classList.remove('hidden');
-      globalSearchInput.value = '';
-      globalSearchInput.focus();
-      searchResults.innerHTML = `
-        <div class="text-center py-12 text-slate-400">
-          <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-          <p>输入关键词，在章节、段落、配置参数或代码块中匹配全文</p>
-        </div>
-      `;
-      lucide.createIcons();
-    }
+        container.querySelectorAll('a[href^="#"]').forEach(link => {
+          if (link.dataset.internalBound === '1') return;
+          link.dataset.internalBound = '1';
 
-    function closeSearch() {
-      searchModal.classList.add('hidden');
-    }
+          link.addEventListener('click', e => {
+            const href = link.getAttribute('href');
+            if (!href || href === '#') return;
 
-    openSearchBtn?.addEventListener('click', openSearch);
-    openSearchBtnMobile?.addEventListener('click', openSearch);
-    closeSearchBtn?.addEventListener('click', closeSearch);
+            let key;
+            try {
+              key = decodeURIComponent(href.slice(1)).trim();
+            } catch {
+              key = href.slice(1).trim();
+            }
 
-    // 快捷键支持：按 / 或 ⌘K / Ctrl+K 激活搜索，ESC 关闭
-    window.addEventListener('keydown', (e) => {
-      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-      const isInputActive = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
+            if (!key) return;
 
-      if (e.key === '/' && !isInputActive && searchModal.classList.contains('hidden')) {
-        e.preventDefault();
-        openSearch();
-        return;
+            const target =
+              $(key) ||
+              $(slugify(key)) ||
+              Array.from(container.querySelectorAll('h1,h2,h3,h4,h5,h6'))
+                .find(h =>
+                  h.innerText.trim() === key ||
+                  h.dataset.rawTitle === key
+                );
+
+            if (!target) return;
+
+            e.preventDefault();
+            scrollToElement(target, true);
+
+            // 更新地址栏但不触发浏览器默认滚动
+            try {
+              history.replaceState(null, '', `#${encodeURIComponent(target.id)}`);
+            } catch {}
+          });
+        });
       }
 
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        searchModal.classList.contains('hidden') ? openSearch() : closeSearch();
-        return;
-      }
+      /* ---------- 搜索 ---------- */
+      const searchModal = $('search-modal');
+      const globalSearchInput = $('global-search-input');
+      const searchResults = $('search-results');
+      const openSearchBtn = $('open-search-modal');
+      const openSearchBtnMobile = $('open-search-modal-mobile');
+      const closeSearchBtn = $('close-search-btn');
 
-      if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
-        closeSearch();
-      }
-    });
+      let previousFocus = null;
 
-    searchModal.addEventListener('click', (e) => {
-      if (e.target === searchModal) closeSearch();
-    });
-
-    globalSearchInput.addEventListener('input', (e) => {
-      const keyword = e.target.value.trim();
-      if (!keyword) {
+      function emptySearchState() {
         searchResults.innerHTML = `
           <div class="text-center py-12 text-slate-400">
-            <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50" aria-hidden="true"></i>
             <p>输入关键词，在章节、段落、配置参数或代码块中匹配全文</p>
           </div>
         `;
         lucide.createIcons();
-        return;
       }
 
-      const lowerKey = keyword.toLowerCase();
-      const results = [];
+      function openSearch() {
+        if (!searchModal || !globalSearchInput) return;
 
-      searchIndex.forEach(item => {
-        const lowerText = item.text.toLowerCase();
-        const index = lowerText.indexOf(lowerKey);
-        if (index !== -1) {
-          const start = Math.max(0, index - 35);
-          const end = Math.min(item.text.length, index + keyword.length + 55);
-          let snippet = item.text.substring(start, end);
+        previousFocus = document.activeElement;
+        searchModal.classList.remove('hidden');
+        document.body.classList.add('search-open');
 
-          if (start > 0) snippet = '...' + snippet;
-          if (end < item.text.length) snippet = snippet + '...';
+        globalSearchInput.value = '';
+        emptySearchState();
+
+        requestAnimationFrame(() => {
+          globalSearchInput.focus({ preventScroll: true });
+        });
+      }
+
+      function closeSearch() {
+        if (!searchModal) return;
+
+        searchModal.classList.add('hidden');
+        document.body.classList.remove('search-open');
+
+        if (previousFocus && typeof previousFocus.focus === 'function') {
+          try { previousFocus.focus({ preventScroll: true }); } catch {}
+        }
+        previousFocus = null;
+      }
+
+      openSearchBtn?.addEventListener('click', openSearch);
+      openSearchBtnMobile?.addEventListener('click', openSearch);
+      closeSearchBtn?.addEventListener('click', closeSearch);
+
+      searchModal?.addEventListener('click', e => {
+        if (e.target === searchModal) closeSearch();
+      });
+
+      function renderSearchResults(keyword) {
+        const key = keyword.toLowerCase();
+        const results = [];
+
+        searchIndex.forEach(item => {
+          const textLower = item.text.toLowerCase();
+          const index = textLower.indexOf(key);
+          if (index < 0) return;
+
+          const start = Math.max(0, index - 45);
+          const end = Math.min(item.text.length, index + keyword.length + 70);
+
+          let snippet = item.text.slice(start, end);
+          if (start > 0) snippet = '…' + snippet;
+          if (end < item.text.length) snippet += '…';
 
           results.push({
             ...item,
-            snippet: snippet,
-            isHeadingMatch: item.type === 'heading'
+            snippet,
+            isHeadingMatch: item.type === 'heading',
+            exactStart: index
           });
-        }
-      });
-
-      results.sort((a, b) => (b.isHeadingMatch ? 1 : 0) - (a.isHeadingMatch ? 1 : 0));
-
-      if (results.length === 0) {
-        searchResults.innerHTML = `
-          <div class="text-center py-12 text-slate-400">
-            <p class="font-medium">未找到包含 "${keyword}" 的内容</p>
-            <p class="text-xs mt-1">请尝试更换缩写、协议名称或参数关键字</p>
-          </div>
-        `;
-        return;
-      }
-
-      const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      let htmlContent = '';
-
-      results.forEach(res => {
-        const highlightedTitle = res.section.replace(regex, '<mark class="search-highlight">$1</mark>');
-        const highlightedSnippet = res.snippet.replace(regex, '<mark class="search-highlight">$1</mark>');
-
-        htmlContent += `
-          <div class="search-item p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/70 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition" data-target="${res.elementId}">
-            <div class="flex items-center gap-1.5 text-xs text-sky-600 dark:text-sky-400 font-medium mb-1">
-              <i data-lucide="${res.type === 'heading' ? 'hash' : 'align-left'}" class="w-3.5 h-3.5"></i>
-              <span>${highlightedTitle}</span>
-            </div>
-            <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-mono">
-              ${highlightedSnippet}
-            </p>
-          </div>
-        `;
-      });
-
-      searchResults.innerHTML = htmlContent;
-      lucide.createIcons();
-
-      document.querySelectorAll('.search-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const targetId = item.getAttribute('data-target');
-          closeSearch();
-          if (window.innerWidth < 768) {
-            closeSidebar();
-          }
-
-          const targetEl = document.getElementById(targetId);
-          if (targetEl) {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            targetEl.classList.remove('target-highlight');
-            void targetEl.offsetWidth;
-            targetEl.classList.add('target-highlight');
-          }
         });
-      });
-    });
 
-    // 7. 加载与渲染 README 核心流程
-    const MD_URL = window.location.protocol === 'file:' 
-      ? 'https://raw.githubusercontent.com/LOWERTOP/Shadowrocket/refs/heads/main/README.md'
-      : './README.md';
+        // 标题命中 > 章节内正文命中；同等级按原文顺序
+        results.sort((a, b) =>
+          Number(b.isHeadingMatch) - Number(a.isHeadingMatch)
+        );
 
-    async function loadManualDirectly() {
-      const docContent = document.getElementById('doc-content');
-
-      try {
-        const res = await fetch(MD_URL, { cache: 'no-cache' });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const mdText = await res.text();
-
-        // 预处理并渲染 Markdown
-        const processedMd = preprocessMarkdown(mdText);
-        docContent.innerHTML = marked.parse(processedMd);
-
-        lucide.createIcons();
-
-        // 构建侧边栏与标题锚点
-        buildTOCAndCodeActions();
-
-        // 全文搜索索引
-        buildSearchIndex();
-
-        // 绑定正文内部锚点点击平滑滚动
-        setupInternalLinks();
-      } catch (err) {
-        console.error("加载 README 失败:", err);
-        docContent.innerHTML = `
-          <div class="text-center py-16 text-rose-500">
-            <p class="font-semibold mb-2">获取 README.md 失败</p>
-            <p class="text-sm text-slate-400">请确保网络通畅或本地同级目录下存在 README.md 文件。</p>
-          </div>
-        `;
-      }
-    }
-
-    // 8. 构建侧边栏目录及代码一键复制
-    function buildTOCAndCodeActions() {
-      const docContent = document.getElementById('doc-content');
-      const tocTree = document.getElementById('toc-tree');
-      tocTree.innerHTML = '';
-
-      const headings = docContent.querySelectorAll('h1, h2, h3');
-      headings.forEach((heading, idx) => {
-        const text = heading.innerText.trim();
-        
-        // 过滤隐藏“使用目录”
-        if (text === '使用目录' || text === '目录' || text.toLowerCase() === 'table of contents') {
-          heading.remove();
+        if (!results.length) {
+          searchResults.innerHTML = `
+            <div class="text-center py-12 text-slate-400">
+              <p class="font-medium">未找到包含“${escapeHtml(keyword)}”的内容</p>
+              <p class="text-xs mt-1">请尝试更换缩写、协议名称或参数关键字</p>
+            </div>
+          `;
           return;
         }
 
-        const slugId = slugify(text) || `section-${idx}`;
-        heading.id = slugId;
-        heading.setAttribute('data-raw-title', text);
+        const escapedKeyword = escapeHtml(keyword);
+        const regex = new RegExp(
+          `(${escapedKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`,
+          'gi'
+        );
 
-        const link = document.createElement('a');
-        link.href = '#' + encodeURIComponent(slugId);
-        link.className = `block py-1.5 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors truncate ${
-          heading.tagName === 'H1' ? 'font-semibold text-slate-800 dark:text-slate-200' :
-          heading.tagName === 'H2' ? 'ml-3 text-slate-600 dark:text-slate-400' :
-          'ml-6 text-xs text-slate-500 dark:text-slate-500'
-        }`;
-        link.innerText = text;
-        link.addEventListener('click', (e) => {
+        searchResults.innerHTML = results.map(res => {
+          const title = escapeHtml(res.section).replace(
+            regex,
+            '<mark class="search-highlight">$1</mark>'
+          );
+          const snippet = escapeHtml(res.snippet).replace(
+            regex,
+            '<mark class="search-highlight">$1</mark>'
+          );
+
+          return `
+            <button
+              type="button"
+              class="search-item w-full text-left p-3 rounded-lg hover:bg-slate-100
+                     dark:hover:bg-slate-800/70 cursor-pointer border border-transparent
+                     hover:border-slate-200 dark:hover:border-slate-700 transition"
+              data-target="${escapeHtml(res.elementId)}"
+            >
+              <span class="flex items-center gap-1.5 text-xs text-sky-600
+                           dark:text-sky-400 font-medium mb-1">
+                <i data-lucide="${res.type === 'heading' ? 'hash' : 'align-left'}"
+                   class="w-3.5 h-3.5" aria-hidden="true"></i>
+                <span>${title}</span>
+              </span>
+              <span class="block text-xs text-slate-600 dark:text-slate-300
+                           line-clamp-2 leading-relaxed font-mono">
+                ${snippet}
+              </span>
+            </button>
+          `;
+        }).join('');
+
+        lucide.createIcons();
+
+        searchResults.querySelectorAll('.search-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const target = $(item.dataset.target);
+            if (!target) return;
+
+            closeSearch();
+            if (window.innerWidth < 768) closeSidebar();
+            scrollToElement(target, true);
+
+            try {
+              history.replaceState(null, '', `#${encodeURIComponent(target.id)}`);
+            } catch {}
+          });
+        });
+      }
+
+      let searchTimer = 0;
+
+      globalSearchInput?.addEventListener('input', e => {
+        const keyword = e.target.value.trim();
+
+        cancelAnimationFrame(searchTimer);
+        searchTimer = requestAnimationFrame(() => {
+          if (!keyword) emptySearchState();
+          else renderSearchResults(keyword);
+        });
+      });
+
+      /* ---------- 键盘快捷键 ---------- */
+      window.addEventListener('keydown', e => {
+        const active = document.activeElement;
+        const tag = active?.tagName?.toLowerCase() || '';
+        const inputActive =
+          tag === 'input' ||
+          tag === 'textarea' ||
+          active?.isContentEditable;
+
+        if (e.key === '/' && !inputActive && searchModal?.classList.contains('hidden')) {
           e.preventDefault();
-          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          heading.classList.remove('target-highlight');
-          void heading.offsetWidth;
-          heading.classList.add('target-highlight');
+          openSearch();
+          return;
+        }
 
-          if (window.innerWidth < 768) {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          if (searchModal?.classList.contains('hidden')) openSearch();
+          else closeSearch();
+          return;
+        }
+
+        if (e.key === 'Escape') {
+          if (searchModal && !searchModal.classList.contains('hidden')) {
+            e.preventDefault();
+            closeSearch();
+          } else if (window.innerWidth < 768 && sidebar &&
+                     !sidebar.classList.contains('-translate-x-full')) {
             closeSidebar();
           }
-        });
-        tocTree.appendChild(link);
+        }
       });
 
-      // 代码复制按钮
-      document.querySelectorAll('pre').forEach(pre => {
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'absolute top-2.5 right-2.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition border border-slate-700 select-none';
-        copyBtn.innerText = '复制';
-        copyBtn.addEventListener('click', async () => {
-          const code = pre.querySelector('code')?.innerText || '';
-          await navigator.clipboard.writeText(code);
-          copyBtn.innerText = '已复制!';
-          setTimeout(() => copyBtn.innerText = '复制', 2000);
-        });
-        pre.appendChild(copyBtn);
-      });
-    }
+      /* ---------- README 加载 ---------- */
+      const MD_URL = window.location.protocol === 'file:'
+        ? 'https://raw.githubusercontent.com/LOWERTOP/Shadowrocket/refs/heads/main/README.md'
+        : './README.md';
 
-    // 9. 正文内部相对锚点平滑跳转与高亮关联
-    function setupInternalLinks() {
-      const contentContainer = document.getElementById('content-container');
-      const links = contentContainer.querySelectorAll('a[href^="#"]');
+      async function loadManualDirectly() {
+        const docContent = $('doc-content');
+        if (!docContent) return;
 
-      links.forEach(link => {
-        link.addEventListener('click', (e) => {
-          const href = link.getAttribute('href');
-          if (!href || href === '#') return;
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
 
-          e.preventDefault();
-          const targetKey = decodeURIComponent(href.slice(1)).trim();
-          const targetSlug = slugify(targetKey);
+          const res = await fetch(MD_URL, {
+            cache: 'no-cache',
+            signal: controller.signal,
+            headers: { 'Accept': 'text/plain, text/markdown, */*' }
+          });
 
-          let targetEl = document.getElementById(targetKey) 
-            || document.getElementById(targetSlug)
-            || Array.from(document.querySelectorAll('h1, h2, h3, h4')).find(h => {
-                 return h.innerText.trim() === targetKey || h.getAttribute('data-raw-title') === targetKey;
-               });
+          clearTimeout(timeout);
 
-          if (targetEl) {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            targetEl.classList.remove('target-highlight');
-            void targetEl.offsetWidth;
-            targetEl.classList.add('target-highlight');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          const mdText = await res.text();
+          if (!mdText.trim()) throw new Error('README 内容为空');
+
+          const processed = preprocessMarkdown(mdText);
+          docContent.innerHTML = marked.parse(processed);
+
+          highlightCodeBlocks(docContent);
+          buildTOCAndCodeActions();
+          setupInternalLinks();
+
+          lucide.createIcons();
+
+          // 如果 URL 中本来就带章节锚点，加载完成后再定位。
+          const hash = decodeURIComponent(location.hash.slice(1));
+          if (hash) {
+            const target = $(hash) || $(slugify(hash));
+            if (target) {
+              setTimeout(() => scrollToElement(target, false), 0);
+            }
           }
-        });
-      });
-    }
+        } catch (err) {
+          console.error('加载 README 失败:', err);
 
-    loadManualDirectly();
+          const message = err?.name === 'AbortError'
+            ? 'README.md 加载超时，请检查网络连接。'
+            : '请确保网络通畅，或本地同级目录下存在 README.md 文件。';
+
+          docContent.innerHTML = `
+            <div class="text-center py-16 text-rose-500">
+              <i data-lucide="wifi-off" class="w-8 h-8 mx-auto mb-3 opacity-70"
+                 aria-hidden="true"></i>
+              <p class="font-semibold mb-2">获取 README.md 失败</p>
+              <p class="text-sm text-slate-400">${escapeHtml(message)}</p>
+              <button id="retry-load" type="button"
+                class="mt-5 px-3 py-1.5 rounded-lg text-sm bg-slate-100
+                       dark:bg-slate-800 text-slate-600 dark:text-slate-300
+                       hover:bg-slate-200 dark:hover:bg-slate-700">
+                重新加载
+              </button>
+            </div>
+          `;
+          lucide.createIcons();
+          $('retry-load')?.addEventListener('click', loadManualDirectly);
+        }
+      }
+
+      /* ---------- 初始化 ---------- */
+      lucide.createIcons();
+      loadManualDirectly();
+
+      /* 屏幕尺寸变化时保持侧边栏状态正确 */
+      window.addEventListener('resize', () => {
+        if (window.innerWidth < 768) {
+          // 窄屏：边栏自动隐藏，避免从桌面端缩窄窗口时仍占据/遮挡内容
+          sidebar?.classList.add('-translate-x-full');
+          sidebarBackdrop?.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden');
+        } else {
+          // 宽屏：恢复桌面端固定显示的边栏
+          sidebarBackdrop?.classList.add('hidden');
+          sidebar?.classList.remove('-translate-x-full');
+          document.body.classList.remove('overflow-hidden');
+        }
+      }, { passive: true });
+
+      // 页面首次加载时也立即根据当前窗口宽度同步边栏状态
+      if (window.innerWidth < 768) {
+        sidebar?.classList.add('-translate-x-full');
+        sidebarBackdrop?.classList.add('hidden');
+      } else {
+        sidebar?.classList.remove('-translate-x-full');
+      }
+
+    })();
   </script>
 </body>
 </html>
