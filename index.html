@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shadowrocket 手册与指南</title>
+  
+  <!-- 网站图标与标签页图标 -->
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" />
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" />
+
+  <!-- 样式及图标库 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#0070f3', 600: '#0051a8' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* 现代文档排版系统 */
+    .markdown-body h1 { font-size: 1.85rem; font-weight: 700; margin-top: 1.8rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb; }
+    .markdown-body h2 { font-size: 1.45rem; font-weight: 600; margin-top: 1.6rem; margin-bottom: 0.75rem; padding-bottom: 0.3rem; border-bottom: 1px solid #f3f4f6; }
+    .markdown-body h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+    .dark .markdown-body h1, .dark .markdown-body h2 { border-color: #374151; }
+    .markdown-body p { margin-bottom: 0.85rem; line-height: 1.75; }
+    .markdown-body ul, .markdown-body ol { margin-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc; }
+    .markdown-body ol { list-style-type: decimal; }
+    .markdown-body li { margin-bottom: 0.35rem; }
+    .markdown-body pre { position: relative; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; overflow-x: auto; background: #0f172a; }
+    .markdown-body code:not(pre code) { background-color: rgba(110, 118, 129, 0.15); padding: 0.15rem 0.35rem; border-radius: 4px; font-size: 0.875em; }
+    .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.95rem; }
+    .markdown-body th, .markdown-body td { border: 1px solid #e2e8f0; padding: 0.5rem 0.75rem; text-align: left; }
+    .dark .markdown-body th, .dark .markdown-body td { border-color: #334155; }
+    .markdown-body th { background-color: #f8fafc; font-weight: 600; }
+    .dark .markdown-body th { background-color: #1e293b; }
+    .markdown-body blockquote { border-left: 4px solid #0ea5e9; padding-left: 1rem; margin: 1rem 0; color: #64748b; }
+    .dark .markdown-body blockquote { color: #94a3b8; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- 侧边目录栏 -->
+    <aside id="sidebar" class="w-80 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-30 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out">
+      <!-- 头部：图标与品牌 -->
+      <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <img src="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" alt="Shadowrocket Logo" class="w-6 h-6 rounded-md shadow-sm" />
+          <span class="font-semibold text-lg tracking-tight">Shadowrocket</span>
+        </div>
+        <button id="theme-toggle" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none">
+          <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- 搜索框 -->
+      <div class="p-3 border-b border-slate-200 dark:border-slate-800">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="search-input" placeholder="在手册中快速筛选目录..." class="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-800 border-none rounded-md focus:ring-2 focus:ring-sky-500 outline-none placeholder-slate-400">
+        </div>
+      </div>
+
+      <!-- 目录导航 -->
+      <nav id="toc-tree" class="flex-1 overflow-y-auto p-4 space-y-1 text-sm no-scrollbar">
+        <div class="text-xs text-slate-400 py-2">目录加载中...</div>
+      </nav>
+
+      <!-- 底部状态栏 -->
+      <div class="p-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between items-center">
+        <span id="sync-time">数据状态: 正在拉取...</span>
+        <a href="https://github.com/LOWERTOP/ShadowStore" target="_blank" class="hover:text-sky-500 transition-colors flex items-center gap-1">
+          <i data-lucide="database" class="w-3.5 h-3.5"></i> ShadowStore
+        </a>
+      </div>
+    </aside>
+
+    <!-- 主展示区 -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900 md:bg-slate-50 md:dark:bg-slate-950">
+      <!-- 移动端顶部状态条 -->
+      <div class="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <button id="menu-btn" class="p-1 rounded text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+        <span class="font-medium text-sm">Shadowrocket 指南</span>
+        <div class="w-6"></div>
+      </div>
+
+      <!-- 文档容器 -->
+      <div id="content-container" class="flex-1 overflow-y-auto p-4 md:p-10 lg:px-16 scroll-smooth">
+        <article id="doc-content" class="markdown-body max-w-4xl mx-auto bg-white dark:bg-slate-900 p-6 md:p-10 rounded-xl md:shadow-sm md:border md:border-slate-200 md:dark:border-slate-800">
+          <div id="loading-state" class="flex items-center justify-center py-20 text-slate-400">
+            <i data-lucide="loader-2" class="w-6 h-6 animate-spin mr-2"></i>
+            <span>正在从 ShadowStore 获取最新文档数据...</span>
+          </div>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // 1. 主题切换与持久化
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    const html = document.documentElement;
+
+    function setTheme(dark) {
+      if (dark) {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        themeIcon.setAttribute('data-lucide', 'sun');
+      } else {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        themeIcon.setAttribute('data-lucide', 'moon');
+      }
+      lucide.createIcons();
+    }
+
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    setTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
+    themeToggleBtn.addEventListener('click', () => setTheme(!html.classList.contains('dark')));
+
+    // 2. 移动端抽屉导航
+    const menuBtn = document.getElementById('menu-btn');
+    const sidebar = document.getElementById('sidebar');
+    menuBtn?.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+
+    // 3. 配置高亮
+    marked.setOptions({
+      highlight: function(code, lang) {
+        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+        return hljs.highlight(code, { language }).value;
+      }
+    });
+
+    // 4. 从 ShadowStore 动态拉取 JSON 数据并渲染
+    // 使用带缓存戳的 raw 链接保证实时性
+    const DATA_URL = "https://raw.githubusercontent.com/LOWERTOP/ShadowStore/main/scripts/shadowrocket_manual.json?t=" + new Date().getTime();
+
+    async function loadManual() {
+      const docContent = document.getElementById('doc-content');
+      const syncTime = document.getElementById('sync-time');
+      const tocTree = document.getElementById('toc-tree');
+
+      try {
+        const res = await fetch(DATA_URL);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+
+        // 渲染 Markdown
+        docContent.innerHTML = marked.parse(data.markdown);
+
+        // 更新同步时间状态
+        if (data.updated_at) {
+          const date = new Date(data.updated_at);
+          syncTime.innerText = `更新于: ${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        }
+
+        // 构建侧边栏与代码块复制
+        buildTOCAndCodeActions();
+      } catch (err) {
+        console.error("加载数据失败:", err);
+        docContent.innerHTML = `
+          <div class="text-center py-16 text-rose-500">
+            <p class="font-semibold mb-2">获取手册数据失败</p>
+            <p class="text-sm text-slate-400">请检查 ShadowStore 仓库中的 scripts/shadowrocket_manual.json 是否已生成。</p>
+          </div>
+        `;
+        syncTime.innerText = "数据获取失败";
+      }
+    }
+
+    function buildTOCAndCodeActions() {
+      const docContent = document.getElementById('doc-content');
+      const tocTree = document.getElementById('toc-tree');
+      tocTree.innerHTML = '';
+
+      const headings = docContent.querySelectorAll('h1, h2, h3');
+      headings.forEach((heading, idx) => {
+        const text = heading.innerText.trim();
+        const id = 'section-' + idx;
+        heading.id = id;
+
+        const link = document.createElement('a');
+        link.href = '#' + id;
+        link.className = `block py-1.5 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors truncate ${
+          heading.tagName === 'H1' ? 'font-semibold text-slate-800 dark:text-slate-200' :
+          heading.tagName === 'H2' ? 'ml-3 text-slate-600 dark:text-slate-400' :
+          'ml-6 text-xs text-slate-500 dark:text-slate-500'
+        }`;
+        link.innerText = text;
+        link.addEventListener('click', () => {
+          if (window.innerWidth < 768) {
+            sidebar.classList.add('-translate-x-full');
+          }
+        });
+        tocTree.appendChild(link);
+      });
+
+      // 代码一键复制
+      document.querySelectorAll('pre').forEach(pre => {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'absolute top-2 right-2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition border border-slate-700';
+        copyBtn.innerText = '复制';
+        copyBtn.addEventListener('click', async () => {
+          const code = pre.querySelector('code')?.innerText || '';
+          await navigator.clipboard.writeText(code);
+          copyBtn.innerText = '已复制!';
+          setTimeout(() => copyBtn.innerText = '复制', 2000);
+        });
+        pre.appendChild(copyBtn);
+      });
+    }
+
+    // 5. 搜索过滤功能
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', (e) => {
+      const val = e.target.value.toLowerCase().trim();
+      const links = document.getElementById('toc-tree').querySelectorAll('a');
+      links.forEach(link => {
+        link.style.display = link.innerText.toLowerCase().includes(val) ? 'block' : 'none';
+      });
+    });
+
+    loadManual();
+  </script>
+</body>
+</html>
