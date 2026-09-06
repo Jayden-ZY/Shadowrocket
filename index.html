@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shadowrocket 手册与指南</title>
+  <title>Shadowrocket 使用手册</title>
   
-  <!-- 标签页与桌面图标 -->
+  <!-- 标签页图标 -->
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" />
   <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" />
 
-  <!-- 样式引擎与图标库 -->
+  <!-- Tailwind CSS & Lucide 图标 -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Markdown 解析与代码高亮 -->
+  <!-- Markdown 解析与语法高亮 -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
@@ -31,10 +31,10 @@
     }
   </script>
   <style>
-    /* 现代文档排版样式 */
-    .markdown-body h1 { font-size: 1.85rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; }
-    .markdown-body h2 { font-size: 1.4rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid #f1f5f9; }
-    .markdown-body h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1.35rem; margin-bottom: 0.5rem; }
+    /* 现代排版 */
+    .markdown-body h1 { font-size: 1.85rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; scroll-margin-top: 2rem; }
+    .markdown-body h2 { font-size: 1.4rem; font-weight: 600; margin-top: 1.75rem; margin-bottom: 0.75rem; padding-bottom: 0.35rem; border-bottom: 1px solid #f1f5f9; scroll-margin-top: 2rem; }
+    .markdown-body h3 { font-size: 1.15rem; font-weight: 600; margin-top: 1.35rem; margin-bottom: 0.5rem; scroll-margin-top: 2rem; }
     .dark .markdown-body h1, .dark .markdown-body h2 { border-color: #334155; }
     .markdown-body p { margin-bottom: 0.85rem; line-height: 1.75; }
     .markdown-body ul, .markdown-body ol { margin-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc; }
@@ -48,11 +48,14 @@
     .markdown-body th { background-color: #f8fafc; font-weight: 600; }
     .dark .markdown-body th { background-color: #1e293b; }
     
-    /* 默认普通引用样式 */
     .markdown-body blockquote:not(.callout-box) { border-left: 4px solid #94a3b8; padding-left: 1rem; margin: 1rem 0; color: #64748b; }
     .dark .markdown-body blockquote:not(.callout-box) { color: #94a3b8; }
 
-    /* GitHub 风格 Callout 语义卡片 */
+    /* 正文链接美化 */
+    .markdown-body a { color: #0284c7; text-decoration: underline; text-underline-offset: 2px; }
+    .dark .markdown-body a { color: #38bdf8; }
+
+    /* Callout 语义卡片 */
     .callout-box { margin: 1.25rem 0; padding: 0.9rem 1.1rem; border-radius: 0.5rem; border-left-width: 4px; font-size: 0.925rem; line-height: 1.65; }
     .callout-box .callout-header { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.4rem; }
     .callout-box .callout-content p:last-child { margin-bottom: 0; }
@@ -68,32 +71,76 @@
     .callout-important { background-color: #faf5ff; border-color: #a855f7; color: #6b21a8; }
     .dark .callout-important { background-color: rgba(168, 85, 247, 0.1); border-color: #c084fc; color: #e9d5ff; }
 
+    /* 搜索命中高亮样式 */
+    mark.search-highlight {
+      background-color: rgba(253, 224, 71, 0.45);
+      color: inherit;
+      padding: 0.1em 0.25em;
+      border-radius: 3px;
+    }
+    .dark mark.search-highlight {
+      background-color: rgba(234, 179, 8, 0.35);
+      color: #fef08a;
+    }
+
+    /* 跳转定位呼吸动画 */
+    @keyframes pulse-focus {
+      0% { background-color: rgba(14, 165, 233, 0.25); border-radius: 6px; }
+      100% { background-color: transparent; }
+    }
+    .target-highlight {
+      animation: pulse-focus 2.2s cubic-bezier(0, 0, 0.2, 1);
+    }
+
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
-  <div class="flex h-screen overflow-hidden">
+  <div class="flex h-screen overflow-hidden relative">
 
-    <!-- 侧边导航栏 -->
-    <aside id="sidebar" class="w-80 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-30 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out">
-      <!-- 头部 -->
+    <!-- 窄屏抽屉背景遮罩 -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
+
+    <!-- 侧边栏 -->
+    <aside id="sidebar" class="w-80 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-40 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-200 ease-in-out">
+      <!-- 品牌栏与控制按钮 -->
       <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-        <div class="flex items-center space-x-2.5">
-          <img src="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" alt="Logo" class="w-6 h-6 rounded-md shadow-sm" />
-          <span class="font-semibold text-lg tracking-tight">Shadowrocket</span>
+        <div class="flex items-center space-x-2.5 min-w-0">
+          <img src="https://raw.githubusercontent.com/LOWERTOP/Shadowrocket-First/main/img/Shadowrocket.png" alt="Logo" class="w-6 h-6 rounded-md shadow-sm flex-shrink-0" />
+          <span class="font-semibold text-lg tracking-tight truncate">Shadowrocket</span>
         </div>
-        <button id="theme-toggle" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none" title="切换主题">
-          <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
-        </button>
+        <div class="flex items-center space-x-1 flex-shrink-0">
+          <!-- 直达 GitHub 主页按钮 (位于主题按钮左侧) -->
+          <a href="https://github.com/LOWERTOP/Shadowrocket" target="_blank" rel="noopener noreferrer" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors" title="访问 GitHub 仓库">
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+            </svg>
+          </a>
+          <!-- 主题切换按钮 -->
+          <button id="theme-toggle" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors" title="切换主题">
+            <i data-lucide="moon" id="theme-icon" class="w-4 h-4"></i>
+          </button>
+          <!-- 窄屏模式下关闭边栏按钮 -->
+          <button id="close-sidebar-btn" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none transition-colors md:hidden ml-1" title="关闭目录">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- 搜索框 -->
+      <!-- 全局搜索激活按钮 (展示 ⌘K 与 / 快捷键) -->
       <div class="p-3 border-b border-slate-200 dark:border-slate-800">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-          <input type="text" id="search-input" placeholder="在手册中快速过滤目录..." class="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-100 dark:bg-slate-800 border-none rounded-md focus:ring-2 focus:ring-sky-500 outline-none placeholder-slate-400">
-        </div>
+        <button id="open-search-modal" class="w-full flex items-center justify-between px-3 py-2 text-sm bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition border border-transparent hover:border-slate-300 dark:hover:border-slate-700">
+          <span class="flex items-center gap-2">
+            <i data-lucide="search" class="w-4 h-4"></i>
+            <span>搜索文档全文...</span>
+          </span>
+          <div class="hidden md:flex items-center gap-1 font-mono text-[10px]">
+            <kbd class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">⌘K</kbd>
+            <span class="text-slate-400">/</span>
+            <kbd class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded">/</kbd>
+          </div>
+        </button>
       </div>
 
       <!-- 侧边栏目录容器 -->
@@ -103,22 +150,37 @@
 
       <!-- 底部状态栏 -->
       <div class="p-3 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between items-center">
-        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block"></span> 实时直读 README</span>
-        <a href="https://github.com/LOWERTOP/Shadowrocket" target="_blank" class="hover:text-sky-500 transition-colors flex items-center gap-1">
-          <i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub
+        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> 实时文档</span>
+        <a href="https://github.com/LOWERTOP/Shadowrocket" target="_blank" rel="noopener noreferrer" class="hover:text-sky-500 transition-colors flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+          </svg>
+          <span>GitHub</span>
         </a>
       </div>
     </aside>
 
-    <!-- 主展示窗口 -->
+    <!-- 主展示区 -->
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900 md:bg-slate-50 md:dark:bg-slate-950">
-      <!-- 移动端顶部标题条 -->
-      <div class="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <button id="menu-btn" class="p-1 rounded text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+      <!-- 移动端顶部状态条 -->
+      <div class="md:hidden flex items-center justify-between p-3.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <button id="menu-btn" class="p-1 rounded text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" title="打开目录">
           <i data-lucide="menu" class="w-6 h-6"></i>
         </button>
-        <span class="font-medium text-sm">Shadowrocket 指南</span>
-        <div class="w-6"></div>
+        <span class="font-medium text-sm truncate px-2">Shadowrocket 使用手册</span>
+        
+        <!-- 移动端操作区：搜索按钮 + GitHub直达按钮 -->
+        <div class="flex items-center space-x-1">
+          <button id="open-search-modal-mobile" class="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md" title="搜索文档">
+            <i data-lucide="search" class="w-5 h-5"></i>
+          </button>
+          <!-- 窄屏模式下位于搜索按钮右侧的 GitHub 按钮 -->
+          <a href="https://github.com/LOWERTOP/Shadowrocket" target="_blank" rel="noopener noreferrer" class="p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors" title="访问 GitHub 仓库">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+            </svg>
+          </a>
+        </div>
       </div>
 
       <!-- 正文容器 -->
@@ -133,10 +195,33 @@
     </main>
   </div>
 
+  <!-- 全文检索弹窗 -->
+  <div id="search-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-start justify-center p-4 pt-12 md:pt-20">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transform transition-all max-h-[80vh]">
+      <div class="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+        <i data-lucide="search" class="w-5 h-5 text-slate-400"></i>
+        <input id="global-search-input" type="text" placeholder="输入任意关键词匹配全文内容..." class="flex-1 bg-transparent text-slate-900 dark:text-slate-100 text-base outline-none placeholder-slate-400">
+        <button id="close-search-btn" class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-1 rounded text-slate-500 transition">ESC</button>
+      </div>
+      <div id="search-results" class="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar text-sm">
+        <div class="text-center py-12 text-slate-400">
+          <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+          <p>输入关键词，在章节、段落、配置参数或代码块中匹配全文</p>
+        </div>
+      </div>
+      <div class="px-4 py-2 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+        <span>已针对文档建立全文段落索引</span>
+        <span class="flex items-center gap-2">
+          <span>点击跳转对应位置</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
   <script>
     lucide.createIcons();
 
-    // 1. 主题切换与持久化
+    // 1. 主题切换
     const themeToggleBtn = document.getElementById('theme-toggle');
     const themeIcon = document.getElementById('theme-icon');
     const html = document.documentElement;
@@ -159,12 +244,27 @@
     setTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
     themeToggleBtn.addEventListener('click', () => setTheme(!html.classList.contains('dark')));
 
-    // 2. 移动端侧边栏切换
+    // 2. 移动端抽屉与遮罩管理
     const menuBtn = document.getElementById('menu-btn');
     const sidebar = document.getElementById('sidebar');
-    menuBtn?.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 
-    // 3. 配置代码高亮
+    function openSidebar() {
+      sidebar.classList.remove('-translate-x-full');
+      sidebarBackdrop.classList.remove('hidden');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.add('-translate-x-full');
+      sidebarBackdrop.classList.add('hidden');
+    }
+
+    menuBtn?.addEventListener('click', openSidebar);
+    closeSidebarBtn?.addEventListener('click', closeSidebar);
+    sidebarBackdrop?.addEventListener('click', closeSidebar);
+
+    // 3. 高亮配置
     marked.setOptions({
       highlight: function(code, lang) {
         const language = hljs.getLanguage(lang) ? lang : 'plaintext';
@@ -172,14 +272,26 @@
       }
     });
 
-    // 4. Markdown 文本处理流水线（剔除目录 + 美化 Callout）
+    // 4. Markdown 清洗流水线 (截取起始标题 + 取消标题超链 + 隐藏正文使用目录 + Callout 语义化)
     function preprocessMarkdown(md) {
       if (!md) return "";
 
-      // A. 剔除原文自带的内嵌“目录”列表（匹配从“使用目录”或类似标题到下一个主标题的内容）
-      let cleaned = md.replace(/###?\s*(?:使用目录|目录|Table of Contents)[\s\S]*?(?=\n##?\s+|$)/i, '');
+      // 1. 取消所有标题中的超链接：如 "## [快速使用方法](#xxx)" => "## 快速使用方法"
+      let cleaned = md.replace(/^(#{1,6}\s+)(.*?)$/gm, (match, hashes, titleContent) => {
+        const textOnly = titleContent.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        return hashes + textOnly;
+      });
 
-      // B. 转换 GitHub 风格 Callout 提示框
+      // 2. 截取从“Shadowrocket 使用手册”标题开始的正文，不显示上方的内容
+      const headerMatch = cleaned.match(/(?:^|\n)((?:#{1,6}\s+.*?Shadowrocket\s*使用手册|<h[1-6][^>]*>.*?Shadowrocket\s*使用手册[\s\S]*?<\/h[1-6]>)[\s\S]*)/i);
+      if (headerMatch) {
+        cleaned = headerMatch[1];
+      }
+
+      // 3. 彻底剔除正文中的“使用目录”段落及其后续的目录列表
+      cleaned = cleaned.replace(/#{1,6}\s*(?:使用目录|目录|Table of Contents)[\s\S]*?(?=\n#{1,6}\s+|$)/i, '');
+
+      // 4. 渲染 GitHub 风格 Callout 语义卡片
       const calloutConfig = {
         'TIP': { label: '提示', icon: 'lightbulb', class: 'callout-tip' },
         'NOTE': { label: '注意', icon: 'info', class: 'callout-note' },
@@ -212,8 +324,202 @@
       return cleaned;
     }
 
-    // 5. 【关键点】：优先从当前目录相对路径获取 README.md，若在开发环境则退化为 raw GitHub
-    // 同源在 GitHub Pages 下直接访问 './README.md' 速度极快且完全无跨域问题
+    // 辅助：生成规范化锚点 Slug
+    function slugify(text) {
+      return text.trim()
+        .toLowerCase()
+        .replace(/[\s\t\n]+/g, '-')
+        .replace(/[^\w\u4e00-\u9fa5\-_]/g, '');
+    }
+
+    // 5. 全文搜索索引
+    let searchIndex = [];
+
+    function buildSearchIndex() {
+      searchIndex = [];
+      const docContent = document.getElementById('doc-content');
+      let currentSection = '概述';
+      let currentSectionId = '';
+
+      const children = docContent.children;
+      for (let i = 0; i < children.length; i++) {
+        const el = children[i];
+        const tagName = el.tagName.toLowerCase();
+
+        if (['h1', 'h2', 'h3'].includes(tagName)) {
+          currentSection = el.innerText.trim();
+          currentSectionId = el.id;
+          searchIndex.push({
+            type: 'heading',
+            section: currentSection,
+            elementId: currentSectionId,
+            text: el.innerText.trim(),
+            rawElement: el
+          });
+          continue;
+        }
+
+        const text = el.innerText ? el.innerText.trim() : '';
+        if (text.length > 2) {
+          const blockId = `block-${i}`;
+          el.id = el.id || blockId;
+
+          searchIndex.push({
+            type: 'content',
+            section: currentSection,
+            elementId: el.id,
+            text: text,
+            rawElement: el
+          });
+        }
+      }
+    }
+
+    // 6. 搜索模态框逻辑
+    const searchModal = document.getElementById('search-modal');
+    const globalSearchInput = document.getElementById('global-search-input');
+    const searchResults = document.getElementById('search-results');
+    const openSearchBtn = document.getElementById('open-search-modal');
+    const openSearchBtnMobile = document.getElementById('open-search-modal-mobile');
+    const closeSearchBtn = document.getElementById('close-search-btn');
+
+    function openSearch() {
+      searchModal.classList.remove('hidden');
+      globalSearchInput.value = '';
+      globalSearchInput.focus();
+      searchResults.innerHTML = `
+        <div class="text-center py-12 text-slate-400">
+          <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+          <p>输入关键词，在章节、段落、配置参数或代码块中匹配全文</p>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function closeSearch() {
+      searchModal.classList.add('hidden');
+    }
+
+    openSearchBtn?.addEventListener('click', openSearch);
+    openSearchBtnMobile?.addEventListener('click', openSearch);
+    closeSearchBtn?.addEventListener('click', closeSearch);
+
+    // 快捷键支持：按 / 或 ⌘K / Ctrl+K 激活搜索，ESC 关闭
+    window.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      const isInputActive = activeTag === 'input' || activeTag === 'textarea' || document.activeElement.isContentEditable;
+
+      if (e.key === '/' && !isInputActive && searchModal.classList.contains('hidden')) {
+        e.preventDefault();
+        openSearch();
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchModal.classList.contains('hidden') ? openSearch() : closeSearch();
+        return;
+      }
+
+      if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
+        closeSearch();
+      }
+    });
+
+    searchModal.addEventListener('click', (e) => {
+      if (e.target === searchModal) closeSearch();
+    });
+
+    globalSearchInput.addEventListener('input', (e) => {
+      const keyword = e.target.value.trim();
+      if (!keyword) {
+        searchResults.innerHTML = `
+          <div class="text-center py-12 text-slate-400">
+            <i data-lucide="file-text" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+            <p>输入关键词，在章节、段落、配置参数或代码块中匹配全文</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      const lowerKey = keyword.toLowerCase();
+      const results = [];
+
+      searchIndex.forEach(item => {
+        const lowerText = item.text.toLowerCase();
+        const index = lowerText.indexOf(lowerKey);
+        if (index !== -1) {
+          const start = Math.max(0, index - 35);
+          const end = Math.min(item.text.length, index + keyword.length + 55);
+          let snippet = item.text.substring(start, end);
+
+          if (start > 0) snippet = '...' + snippet;
+          if (end < item.text.length) snippet = snippet + '...';
+
+          results.push({
+            ...item,
+            snippet: snippet,
+            isHeadingMatch: item.type === 'heading'
+          });
+        }
+      });
+
+      results.sort((a, b) => (b.isHeadingMatch ? 1 : 0) - (a.isHeadingMatch ? 1 : 0));
+
+      if (results.length === 0) {
+        searchResults.innerHTML = `
+          <div class="text-center py-12 text-slate-400">
+            <p class="font-medium">未找到包含 "${keyword}" 的内容</p>
+            <p class="text-xs mt-1">请尝试更换缩写、协议名称或参数关键字</p>
+          </div>
+        `;
+        return;
+      }
+
+      const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      let htmlContent = '';
+
+      results.forEach(res => {
+        const highlightedTitle = res.section.replace(regex, '<mark class="search-highlight">$1</mark>');
+        const highlightedSnippet = res.snippet.replace(regex, '<mark class="search-highlight">$1</mark>');
+
+        htmlContent += `
+          <div class="search-item p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/70 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition" data-target="${res.elementId}">
+            <div class="flex items-center gap-1.5 text-xs text-sky-600 dark:text-sky-400 font-medium mb-1">
+              <i data-lucide="${res.type === 'heading' ? 'hash' : 'align-left'}" class="w-3.5 h-3.5"></i>
+              <span>${highlightedTitle}</span>
+            </div>
+            <p class="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-mono">
+              ${highlightedSnippet}
+            </p>
+          </div>
+        `;
+      });
+
+      searchResults.innerHTML = htmlContent;
+      lucide.createIcons();
+
+      document.querySelectorAll('.search-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const targetId = item.getAttribute('data-target');
+          closeSearch();
+          if (window.innerWidth < 768) {
+            closeSidebar();
+          }
+
+          const targetEl = document.getElementById(targetId);
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.classList.remove('target-highlight');
+            void targetEl.offsetWidth;
+            targetEl.classList.add('target-highlight');
+          }
+        });
+      });
+    });
+
+    // 7. 加载与渲染 README 核心流程
     const MD_URL = window.location.protocol === 'file:' 
       ? 'https://raw.githubusercontent.com/LOWERTOP/Shadowrocket/refs/heads/main/README.md'
       : './README.md';
@@ -226,27 +532,32 @@
         if (!res.ok) throw new Error("HTTP " + res.status);
         const mdText = await res.text();
 
-        // 处理并渲染
+        // 预处理并渲染 Markdown
         const processedMd = preprocessMarkdown(mdText);
         docContent.innerHTML = marked.parse(processedMd);
 
-        // 激活卡片图标
         lucide.createIcons();
 
-        // 构建侧边栏目录与代码复制按钮
+        // 构建侧边栏与标题锚点
         buildTOCAndCodeActions();
+
+        // 全文搜索索引
+        buildSearchIndex();
+
+        // 绑定正文内部锚点点击平滑滚动
+        setupInternalLinks();
       } catch (err) {
-        console.error("加载 README.md 失败:", err);
+        console.error("加载 README 失败:", err);
         docContent.innerHTML = `
           <div class="text-center py-16 text-rose-500">
             <p class="font-semibold mb-2">获取 README.md 失败</p>
-            <p class="text-sm text-slate-400">请确保同一目录下存在 README.md 文件。</p>
+            <p class="text-sm text-slate-400">请确保网络通畅或本地同级目录下存在 README.md 文件。</p>
           </div>
         `;
       }
     }
 
-    // 6. 构建目录树与代码复制
+    // 8. 构建侧边栏目录及代码一键复制
     function buildTOCAndCodeActions() {
       const docContent = document.getElementById('doc-content');
       const tocTree = document.getElementById('toc-tree');
@@ -255,26 +566,40 @@
       const headings = docContent.querySelectorAll('h1, h2, h3');
       headings.forEach((heading, idx) => {
         const text = heading.innerText.trim();
-        const id = 'section-' + idx;
-        heading.id = id;
+        
+        // 过滤隐藏“使用目录”
+        if (text === '使用目录' || text === '目录' || text.toLowerCase() === 'table of contents') {
+          heading.remove();
+          return;
+        }
+
+        const slugId = slugify(text) || `section-${idx}`;
+        heading.id = slugId;
+        heading.setAttribute('data-raw-title', text);
 
         const link = document.createElement('a');
-        link.href = '#' + id;
+        link.href = '#' + encodeURIComponent(slugId);
         link.className = `block py-1.5 px-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors truncate ${
           heading.tagName === 'H1' ? 'font-semibold text-slate-800 dark:text-slate-200' :
           heading.tagName === 'H2' ? 'ml-3 text-slate-600 dark:text-slate-400' :
           'ml-6 text-xs text-slate-500 dark:text-slate-500'
         }`;
         link.innerText = text;
-        link.addEventListener('click', () => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          heading.classList.remove('target-highlight');
+          void heading.offsetWidth;
+          heading.classList.add('target-highlight');
+
           if (window.innerWidth < 768) {
-            sidebar.classList.add('-translate-x-full');
+            closeSidebar();
           }
         });
         tocTree.appendChild(link);
       });
 
-      // 代码一键复制
+      // 代码复制按钮
       document.querySelectorAll('pre').forEach(pre => {
         const copyBtn = document.createElement('button');
         copyBtn.className = 'absolute top-2.5 right-2.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition border border-slate-700 select-none';
@@ -289,15 +614,35 @@
       });
     }
 
-    // 7. 搜索过滤功能
-    const searchInput = document.getElementById('search-input');
-    searchInput.addEventListener('input', (e) => {
-      const val = e.target.value.toLowerCase().trim();
-      const links = document.getElementById('toc-tree').querySelectorAll('a');
+    // 9. 正文内部相对锚点平滑跳转与高亮关联
+    function setupInternalLinks() {
+      const contentContainer = document.getElementById('content-container');
+      const links = contentContainer.querySelectorAll('a[href^="#"]');
+
       links.forEach(link => {
-        link.style.display = link.innerText.toLowerCase().includes(val) ? 'block' : 'none';
+        link.addEventListener('click', (e) => {
+          const href = link.getAttribute('href');
+          if (!href || href === '#') return;
+
+          e.preventDefault();
+          const targetKey = decodeURIComponent(href.slice(1)).trim();
+          const targetSlug = slugify(targetKey);
+
+          let targetEl = document.getElementById(targetKey) 
+            || document.getElementById(targetSlug)
+            || Array.from(document.querySelectorAll('h1, h2, h3, h4')).find(h => {
+                 return h.innerText.trim() === targetKey || h.getAttribute('data-raw-title') === targetKey;
+               });
+
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            targetEl.classList.remove('target-highlight');
+            void targetEl.offsetWidth;
+            targetEl.classList.add('target-highlight');
+          }
+        });
       });
-    });
+    }
 
     loadManualDirectly();
   </script>
